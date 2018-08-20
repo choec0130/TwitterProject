@@ -13,12 +13,11 @@ from collections import Counter
 def main():
     nltk.download('punkt')
 
-    consumer_key = 'o2HBhet9G40bo2KtFkwhMimf2'  # API key
-    consumer_secret = 'DUfJa7yxdHsY0QMBJpjviy6t849yV5TGF27rFvwsqZCO8x7sMr'  # API secret key
-
-    access_token = '1138010744-A6vcezFNOkxDGW74DlnZHe3S1SpjoNZEB13F0tm'
-
-    access_secret = 'kQlIaoX4reBH5b7KHVXMDU1dnFcOujM6ayxtOBFnXbBEg'
+    #all keys and tokens are hidden for privacy
+    consumer_key = ''  # API key
+    consumer_secret = ''  # API secret key (hidden for privacy)
+    access_token = ''
+    access_secret = ''
 
     auth = OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_secret)
