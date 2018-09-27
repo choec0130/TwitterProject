@@ -1,24 +1,59 @@
 import tweepy
 import json
-import sys
 import string
 import vincent
-import pandas
+import pandas as pd
 import nltk
 import re
 import operator
+import matplotlib.pyplot as plt
+import pandas as pd
+
+from os import path
+from textblob import TextBlob
+import matplotlib.pyplot as plt
+from wordcloud import WordCloud, STOPWORDS
+from textblob import TextBlob
 from tweepy import OAuthHandler
 from tweepy import Stream
 from tweepy.streaming import StreamListener
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk import bigrams
+from nltk.stem import PorterStemmer, WordNetLemmatizer
 from collections import Counter
 from collections import defaultdict
 
-# import from nltk
-nltk.download('stopwords')
-nltk.download('punkt')
+
+from unidecode import unidecode
+
+
+my_text_blob = TextBlob("Hello World, my name is Chloe!")
+print(my_text_blob.tags)
+
+
+def get_tweets_of(screen_name):
+    tweets = []
+    # get 100 most recent tweets (max twitter allows)
+    recent_tweets = api.user_timeline(screen_name=screen_name, count=100)
+
+    tweets.extend(recent_tweets)
+
+    oldest_tweet = recent_tweets[-1].id - 1
+
+    # repeat until all tweets are acquired by getting 100 at a time
+    while(len(recent_tweets) > 0):
+        recent_tweets = api.user_timeline(screen_name=screen_name, count=100, max_id=oldest_tweet)
+        tweets.extend(recent_tweets)
+        oldest_tweet = tweets[-1].id-1
+
+    tweet_strings = []
+    for tweet in tweets:
+
+        tweet_strings.extend([unidecode(tweet.text)])
+
+
+    return tweet_strings
 
 # get a list of standardized punctuation
 punctuation = list(string.punctuation)
@@ -69,35 +104,16 @@ def process_previous_tweets():
             tweet = json.loads(line)
             tokens = preprocess(tweet['text'])
 
-#def request_to_api():
- #   GET https://api.twitter.com/1.1/followers/list.json?cursor=-1&screen_name=twitterdev&skip_status=true&include_user_entities=false
-#def giveaways():
-
-
-def check_tweet():
-    giveaway_terms = ['giveaway', 'raffle', 'free stuff', 'sweepstakes']
-    if any(x in giveaway_terms for x in tweet):
-        if("retweet" or "rt" in tweet):
-            # retweet the tweet
-        else if("like" in tweet):
-            # like the tweet
-        else if("tag" in tweet):
-            # tag friend in tweet
 
 def main():
 
-    # my API key and secret
-    consumer_key = 'o2HBhet9G40bo2KtFkwhMimf2'
-    consumer_secret = 'DUfJa7yxdHsY0QMBJpjviy6t849yV5TGF27rFvwsqZCO8x7sMr'  # API secret key
 
-    # my access token and secret
-    access_token = '1138010744-A6vcezFNOkxDGW74DlnZHe3S1SpjoNZEB13F0tm'
-    access_secret = 'kQlIaoX4reBH5b7KHVXMDU1dnFcOujM6ayxtOBFnXbBEg'
+    public_trump_tweets = api.search('Trump')
 
-    # authorize
-    auth = OAuthHandler(consumer_key, consumer_secret)
-    auth.set_access_token(access_token, access_secret)
-    api = tweepy.API(auth)
+    for tweet in public_trump_tweets:
+        print(tweet.text)
+        analysis = TextBlob(tweet.text)
+        print(analysis)
 
     tweet = 'RT @marcobonzanini: this is an eexample! :D http://example.com #NLP'
     print(preprocess(tweet))
@@ -115,6 +131,14 @@ def main():
 #        line = f.readline()  # read only the first tweet/line
 #        tweet = json.loads(line)  # load it as Python dict
 #        print(json.dumps(tweet, indent=4))  # pretty-print
+
+    public_trump_tweets = api.search('Trump')
+
+    for tweet in public_trump_tweets:
+        print(tweet.text)
+        analysis = TextBlob(tweet.text)
+        print(analysis)
+
 
 def time_visualizatiton():
     with open(fname, 'r') as f:
@@ -307,4 +331,44 @@ def geography_data(): #GeoJSON
 
 
 if __name__ == "__main__":
-    main()
+
+    # my API key and secret
+    consumer_key = ''
+    consumer_secret = ''
+
+    # my access token and secret
+    access_token = ''
+    access_secret = ''
+
+    # authorize
+    auth = OAuthHandler(consumer_key, consumer_secret)
+    auth.set_access_token(access_token, access_secret)
+    api = tweepy.API(auth)
+
+
+    #  main()
+    #  prints words of text
+    #  print(my_text_blob.words)
+    #  prints sentiment value of text
+    #  print(my_text_blob.sentiment.polarity)
+
+    my_tweets = get_tweets_of("chloeschoe")
+
+    data = pd.DataFrame(my_tweets, columns=['tweets'])
+    data
+    data['noun_phrases'] = data['tweets'].apply(lambda i: TextBlob(i).noun_phrases)
+    a = []
+    for i in range(len(data)):
+        a.append('  '.join(data['noun_phrases'][i]))
+    afile = open('tweets_noun_phrases.txt', 'w')
+    for i in a:
+        afile.write("%s\n" % i)
+    # Read the whole text.
+    text = open('tweets_noun_phrases.txt').read()
+    stopwords = set(STOPWORDS)
+
+    # Display the image:
+    wordcloud = WordCloud(max_font_size=50, stopwords=STOPWORDS, background_color='purple').generate(text)
+    wordcloud.to_file("nouns_user.png")
+    plt.imshow(wordcloud)
+    plt.axis("off")
