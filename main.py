@@ -8,28 +8,25 @@ import re
 import operator
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
+import PIL
+import requests
+import urllib
 
 from os import path
+from PIL import Image
 from textblob import TextBlob
 import matplotlib.pyplot as plt
 from wordcloud import WordCloud, STOPWORDS
 from textblob import TextBlob
-from tweepy import OAuthHandler
-from tweepy import Stream
+from tweepy import OAuthHandler, Stream
 from tweepy.streaming import StreamListener
 from nltk.tokenize import word_tokenize
-from nltk.corpus import stopwords
+from nltk.corpus import stopwords, words
 from nltk import bigrams
 from nltk.stem import PorterStemmer, WordNetLemmatizer
-from collections import Counter
-from collections import defaultdict
-
-
+from collections import Counter, defaultdict
 from unidecode import unidecode
-
-
-my_text_blob = TextBlob("Hello World, my name is Chloe!")
-print(my_text_blob.tags)
 
 
 def get_tweets_of(screen_name):
@@ -52,24 +49,17 @@ def get_tweets_of(screen_name):
 
         tweet_strings.extend([unidecode(tweet.text)])
 
-
     return tweet_strings
 
-# get a list of standardized punctuation
-punctuation = list(string.punctuation)
-stop = stopwords.words('english') + punctuation + ['rt', 'via', '...']
 # file name is mytweets.json
 fname = 'mytweets.json'
 
-dates = []
-
-# preprocess to recognize Twitter-like strings
 emoticons_str = r"""
-    (?:
-        [:=;] # Eyes
-        [oO\-]? # Nose (optional)
-        [D\)\]\(\]/\\OpP] # Mouth
-    )"""
+     (?:
+         [:=;] # Eyes
+         [oO\-]? # Nose (optional)
+         [D\)\]\(\]/\\OpP] # Mouth
+     )"""
 
 regex_str = [
     emoticons_str,
@@ -87,26 +77,31 @@ regex_str = [
 tokens_re = re.compile(r'(' + '|'.join(regex_str) + ')', re.VERBOSE | re.IGNORECASE)
 emoticon_re = re.compile(r'^' + emoticons_str + '$', re.VERBOSE | re.IGNORECASE)
 
+# my API key and secret
+consumer_key = 'o2HBhet9G40bo2KtFkwhMimf2'
+consumer_secret = 'DUfJa7yxdHsY0QMBJpjviy6t849yV5TGF27rFvwsqZCO8x7sMr'
+
+# my access token and secret
+access_token = '1138010744-A6vcezFNOkxDGW74DlnZHe3S1SpjoNZEB13F0tm'
+access_secret = 'kQlIaoX4reBH5b7KHVXMDU1dnFcOujM6ayxtOBFnXbBEg'
+
+# authorize
+auth = OAuthHandler(consumer_key, consumer_secret)
+auth.set_access_token(access_token, access_secret)
+api = tweepy.API(auth)
+
 
 def tokenize(s):
     return tokens_re.findall(s)
 
-
 def preprocess(s, lowercase=False):
+
     tokens = tokenize(s)
     if lowercase:
         tokens = [token if emoticon_re.search(token) else token.lower() for token in tokens]
     return tokens
 
-def process_previous_tweets():
-    with open('mytweets.json', 'r') as f:
-        for line in f:
-            tweet = json.loads(line)
-            tokens = preprocess(tweet['text'])
-
-
 def main():
-
 
     public_trump_tweets = api.search('Trump')
 
@@ -125,14 +120,6 @@ def main():
     for tweet in tweepy.Cursor(api.user_timeline).items():
         store(tweet._json)
 
-#   put all tweets into mytweets.json
-
-#    with open('mytweets.json', 'r') as f:
-#        line = f.readline()  # read only the first tweet/line
-#        tweet = json.loads(line)  # load it as Python dict
-#        print(json.dumps(tweet, indent=4))  # pretty-print
-
-    public_trump_tweets = api.search('Trump')
 
     for tweet in public_trump_tweets:
         print(tweet.text)
@@ -219,6 +206,14 @@ def co_occurrences():
     print(count_search.most_common(20))
 
 
+
+
+
+
+
+
+
+
 def parsing_tweets():
 
     with open(fname, 'r') as f:
@@ -256,50 +251,6 @@ def visualize_data():
 
     bar.to_json('term_freq.json', html_out=True, html_path='chart.html')
 
-def sentiment_term_probabilities():
-    # n_docs is the total n. of tweets
-    p_t = {}
-    p_t_com = defaultdict(lambda: defaultdict(int))
-
-    for term, n in count_stop_single.items():
-        p_t[term] = n / n_docs
-        for t2 in com[term]:
-            p_t_com[term][t2] = com[term][t2] / n_docs
-
-    positive_words = []
-    negative_words = []
-
-def sentiment_calculate_pmi():
-    pmi = defaultdict(lambda: defaultdict(int))
-    for t1 in p_t:
-        for t2 in com[t1]:
-            denom = p_t[t1] * p_t[t2]
-            pmi[t1][t2] = math.log2(p_t_com[t1][t2] / denom)
-
-    semantic_orientation = {}
-    for term, n in p_t.items():
-        positive_assoc = sum(pmi[term][tx] for tx in positive_vocab)
-        negative_assoc = sum(pmi[term][tx] for tx in negative_vocab)
-        semantic_orientation[term] = positive_assoc - negative_assoc
-
-    semantic_sorted = sorted(semantic_orientation.items(),
-                             key=operator.itemgetter(1),
-                             reverse=True)
-    top_pos = semantic_sorted[:10]
-    top_neg = semantic_sorted[-10:]
-
-    print(top_pos)
-    print(top_neg)
-    print("ITA v WAL: %f" % semantic_orientation['#itavwal'])
-    print("SCO v IRE: %f" % semantic_orientation['#scovire'])
-    print("ENG v FRA: %f" % semantic_orientation['#engvfra'])
-    print("#ITA: %f" % semantic_orientation['#ita'])
-    print("#FRA: %f" % semantic_orientation['#fra'])
-    print("#SCO: %f" % semantic_orientation['#sco'])
-    print("#ENG: %f" % semantic_orientation['#eng'])
-    print("#WAL: %f" % semantic_orientation['#wal'])
-    print("#IRE: %f" % semantic_orientation['#ire'])
-
 def store(tweet):
     print(json.dumps(tweet))
 
@@ -329,46 +280,77 @@ def geography_data(): #GeoJSON
         fout.write(json.dumps(geo_data, indent=4))
 
 
-
 if __name__ == "__main__":
 
-    # my API key and secret
-    consumer_key = ''
-    consumer_secret = ''
-
-    # my access token and secret
-    access_token = ''
-    access_secret = ''
-
-    # authorize
-    auth = OAuthHandler(consumer_key, consumer_secret)
-    auth.set_access_token(access_token, access_secret)
-    api = tweepy.API(auth)
-
-
-    #  main()
-    #  prints words of text
-    #  print(my_text_blob.words)
-    #  prints sentiment value of text
-    #  print(my_text_blob.sentiment.polarity)
+    # main()
 
     my_tweets = get_tweets_of("chloeschoe")
 
+    mask = np.array(
+        Image.open(requests.get('http://theinspirationroom.com/daily/design/2012/6/new_twitter_logo.jpg', stream=True).raw))
+
+    my_string = ""
+    for tweet in my_tweets:
+        my_string += tweet
+    tweet_blob = TextBlob(my_string)
+    my_polarity = tweet_blob.sentiment.polarity
+    print("Polarity value of all tweets: " + str(my_polarity))
+    if(my_polarity > 0):
+        print("Tweets are generally positive!")
+    else:
+        print("Tweets are generally negative!")
+
+    my_subjectivity = tweet_blob.sentiment.subjectivity
+    print("Subjectivity value of all tweets: " + str(my_subjectivity))
+
+    if(my_subjectivity >= 0.5):
+        print("Tweets are generally subjective.")
+    else:
+        print("Tweets are generally objective.")
+
+    stopwords = set(STOPWORDS)
+    lemmatiser = WordNetLemmatizer()
+
+    # get a list of standardized punctuation
+    punctuation = list(string.punctuation)
+    # stopwords = stopwords.words('english') + punctuation + ['rt', 'via', '...']
+
+    # verbs_array = []
+    # for word, tag in tweet_blob.tags:
+    #     if tag == 'VB' and word in words.words():
+    #         #  verbs_array.append(lemmatiser.lemmatize(word, pos="v"))
+    #         verbs_array.append(word)
+    #
+    # verbs_file = open('tweets_verbs.txt', 'w')
+    # for i in verbs_array:
+    #     verbs_file.write("%s\n" % i)
+    #
+    # # Read the whole text.
+    # verbs_text = open('tweets_verbs.txt').read()
+    # stopwords = set(STOPWORDS)
+    #
+    # # display verb word cloud, tried verbs_text, final_verbs, verbs_file
+    # wordcloud_verbs = WordCloud(max_font_size=50, stopwords=STOPWORDS, background_color='white',
+    #                             mask=mask).generate(verbs_text)
+    # wordcloud_verbs.to_file("verbs.png")
+    # plt.imshow(wordcloud_verbs)
+    # plt.axis("off")
+
     data = pd.DataFrame(my_tweets, columns=['tweets'])
-    data
     data['noun_phrases'] = data['tweets'].apply(lambda i: TextBlob(i).noun_phrases)
-    a = []
+    nouns_array = []
     for i in range(len(data)):
-        a.append('  '.join(data['noun_phrases'][i]))
-    afile = open('tweets_noun_phrases.txt', 'w')
-    for i in a:
-        afile.write("%s\n" % i)
+        nouns_array.append('  '.join(data['noun_phrases'][i]))
+    nouns_file = open('tweets_nouns.txt', 'w')
+    for i in nouns_array:
+        nouns_file.write("%s\n" % i)
     # Read the whole text.
-    text = open('tweets_noun_phrases.txt').read()
+    nouns_text = open('tweets_nouns.txt').read()
     stopwords = set(STOPWORDS)
 
-    # Display the image:
-    wordcloud = WordCloud(max_font_size=50, stopwords=STOPWORDS, background_color='purple').generate(text)
-    wordcloud.to_file("nouns_user.png")
-    plt.imshow(wordcloud)
+    # display noun word cloud
+    wordcloud_nouns = WordCloud(max_font_size=50, stopwords=STOPWORDS, background_color='white',
+                                mask=mask).generate(nouns_text)
+    wordcloud_nouns.to_file("nouns.png")
+    plt.imshow(wordcloud_nouns)
     plt.axis("off")
