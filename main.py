@@ -78,12 +78,12 @@ tokens_re = re.compile(r'(' + '|'.join(regex_str) + ')', re.VERBOSE | re.IGNOREC
 emoticon_re = re.compile(r'^' + emoticons_str + '$', re.VERBOSE | re.IGNORECASE)
 
 # my API key and secret
-consumer_key = 'o2HBhet9G40bo2KtFkwhMimf2'
-consumer_secret = 'DUfJa7yxdHsY0QMBJpjviy6t849yV5TGF27rFvwsqZCO8x7sMr'
+consumer_key = ''
+consumer_secret = ''
 
 # my access token and secret
-access_token = '1138010744-A6vcezFNOkxDGW74DlnZHe3S1SpjoNZEB13F0tm'
-access_secret = 'kQlIaoX4reBH5b7KHVXMDU1dnFcOujM6ayxtOBFnXbBEg'
+access_token = ''
+access_secret = ''
 
 # authorize
 auth = OAuthHandler(consumer_key, consumer_secret)
@@ -109,10 +109,6 @@ def main():
         print(tweet.text)
         analysis = TextBlob(tweet.text)
         print(analysis)
-
-    tweet = 'RT @marcobonzanini: this is an eexample! :D http://example.com #NLP'
-    print(preprocess(tweet))
-    # ['RT', '@marcobonzanini', ':', 'this', 'is', 'an', 'example', '!', ':D', 'http://example.com', '#NLP']
 
     # read my own Twitter timeline
     for status in tweepy.Cursor(api.home_timeline).items(10):
@@ -205,15 +201,6 @@ def co_occurrences():
     print("Co-occurrence for %s:" % search_word)
     print(count_search.most_common(20))
 
-
-
-
-
-
-
-
-
-
 def parsing_tweets():
 
     with open(fname, 'r') as f:
@@ -253,7 +240,6 @@ def visualize_data():
 
 def store(tweet):
     print(json.dumps(tweet))
-
 
 def geography_data(): #GeoJSON
     # Tweets are stored in "fname"
